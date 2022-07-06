@@ -2,6 +2,7 @@
 #include <conio.h>
 #include <stdlib.h>
 #include <windows.h>
+#include <time.h>
 
 // #define FIELD_WIDTH 20;
 // #define FIELD_HEIGHT 20;
@@ -53,6 +54,8 @@ unsigned int head_intersects_list(List *list);
 
 
 int main() {
+  // Initialization of random number generator
+  srand(time(NULL));
   // Hiding cursor
   hidecursor();
   // Creating 2D array with dynamically allocated memory
