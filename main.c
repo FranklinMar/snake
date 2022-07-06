@@ -7,10 +7,10 @@
 // #define FIELD_HEIGHT 20;
 //#define SNAKE 1;
 //#define APPLE 2;
-unsigned int TIMEPAUSE = 100;
+unsigned int TIMEPAUSE = 100, GAMEOVER_TIME = 5000;
 // unsigned int EMPTY = 0, SNAKE = 1, APPLE = 2;
 
-enum {EMPTY = 0, SNAKE = 1, APPLE = 2};
+enum {EMPTY = 0, SNAKE = 1, FOOD = 2};
 
 const unsigned int FIELD_WIDTH = 21, FIELD_HEIGHT = 21;
 // char vert_line = '║', hor_line = '═',
@@ -43,9 +43,12 @@ void textcolor(int color);
 int random(int min, int max);
 void display(int **field);
 Node * create_Node(unsigned int x, unsigned int y);
-void field_put(int **field, List *list, unsigned int value);
+void field_put(int **field, Node *node, unsigned int value);
+void field_clear(int **field);
 void hidecursor();
 void move(List *list, Direction direction);
+Node * generate_food(List *list);
+unsigned int head_intersects_list(List *list);
 
 
 
@@ -65,9 +68,10 @@ int main() {
     }
   }
   
-  // Printing game field frame
+  // Clearing the console
   system("cls");
   // clrscr();
+  // Printing game field frame
   int hor_border = FIELD_HEIGHT + 1, vert_border = FIELD_WIDTH + 1;
   for (unsigned int i = 0; i <= hor_border; i++) {
     for (unsigned int j = 0; j <= vert_border; j++) {
@@ -107,24 +111,52 @@ int main() {
   List *snake = (List *) malloc(sizeof(List));
   // Creating head of the snake/list in the middle of the field
   snake->head = snake->end = create_Node(FIELD_WIDTH/2, FIELD_HEIGHT/2);//(Node *) malloc(sizeof(Node));
+  // Create snake body section below the tail
+  // snake->end->node = create_Node(FIELD_WIDTH/2, (FIELD_HEIGHT/2) + 1);
+  snake->end->node = create_Node(snake->end->x, snake->end->y);
+  snake->end = snake->end->node;
+  // Create snake body section below the tail
+  // snake->end->node = create_Node(FIELD_WIDTH/2, (FIELD_HEIGHT/2) + 2);
+  snake->end->node = create_Node(snake->end->x, snake->end->y);
+  snake->end = snake->end->node;
   // Place the snake in the middle of the field
   //snake->head->x = FIELD_WIDTH/2;
   //snake->head->y = FIELD_HEIGHT/2;
 
-  // Put snake on the field
+  // Food coordinates
+  Node *food = generate_food(snake);
+  //int x = node->x, y = node->y;
+
   char ch = 0;
-  unsigned int loop = 1;
+  //unsigned int loop = 1;
   Direction dir = UP;
   //timeout(0);
-  while (loop) {
+  
+  // Put snake on field
+  field_put(field, snake->head, SNAKE);
+  // Put food on field
+  field_put(field, food, FOOD);
+  
+  
+
+  while (1) {
+    // Move the snake
+    move(snake, dir);
+
+    // If snake intersects itself - terminate
+    if (head_intersects_list(snake) == 1) {
+      break;
+    }
+    
+    // If a key was pressed
     if (kbhit()) {
       ch = getch();
-      //if (ch == 0 || ch == 0xE0) {
-      //  ch = getch();
-      //}
-      //if (ch == 'q') {
-      //  break;
-      //}
+      
+      // If it's an arrow key
+      if (ch == 0 || ch == 0xE0) {
+       ch = getch();
+      }
+      
       if ((ch == 'w' || ch == 72) && dir != DOWN) {
         dir = UP;
       } else if ((ch == 'd' || ch == 77) && dir != LEFT) {
@@ -135,10 +167,10 @@ int main() {
         dir = LEFT;
       }
 
+      // If ESC key was pressed/Termination condition
       if (ch == 27) {
         break;
       }
-      // Move the snake
 
       /*switch (ch) {
         case 27:
@@ -178,12 +210,26 @@ int main() {
       }*/
       //move(snake->head, dir);
     }
-    
-    move(snake, dir);
-    field_put(field, snake, SNAKE);
+
+    // If food was taken
+    if (snake->head->x == food->x && snake->head->y == food->y) {
+      food = generate_food(snake);
+      snake->end->node = create_Node(snake->end->x, snake->end->y);
+      snake->end = snake->end->node;
+    }
+
+    // Put snake on field
+    field_put(field, snake->head, SNAKE);
+    // Put food on field
+    field_put(field, food, FOOD);
+    // Display field
     display(field);
+    // Clear field
+    field_clear(field);
+    // Pause
     Sleep(TIMEPAUSE);
   }
+  Sleep(GAMEOVER_TIME);
   //snake->head->node = NULL;
     //field_put(field, snake, SNAKE);
     //display(field);
@@ -202,6 +248,43 @@ int main() {
 }
 
 
+
+Node *generate_food(List *list) {
+  unsigned int x, y;
+  unsigned int condition = 1;
+  while (condition) {
+    x = random(0, FIELD_WIDTH);
+    y = random(0, FIELD_WIDTH);
+    condition = 0;
+    for (Node *i = list->head; i != NULL; i = i->node) {
+      if (x == i->x && y == i->y) {
+        condition = 1;
+        break;
+      }
+    }
+  }
+  Node *node = create_Node(x, y);
+  return node;
+}
+
+unsigned int head_intersects_list(List *list) {
+  if (list == NULL) {
+    return 2;
+  }
+  if (list->head == NULL) {
+    return 2;
+  }
+  if (list->head->node == NULL) {
+    return 0;
+  }
+  Node *head = list->head;
+  for (Node *i = head->node; i != NULL; i = i->node) {
+    if (head->x == i->x && head->y == i->y) {
+      return 1;
+    }
+  }
+  return 0;
+}
 
 void move(List *list, Direction direction) {
   // Termination condition
@@ -290,14 +373,16 @@ void textcolor(int color) {
       color + (__BACKGROUND << 4));
 }
 
-void field_put(int **field, List *list, unsigned int value) {
+void field_clear(int **field) {
   for (unsigned int i = 0; i < FIELD_HEIGHT; i++) {
     for (unsigned int j = 0; j < FIELD_WIDTH; j++) {
       field[i][j] = EMPTY;
     }
   }
+}
 
-  for (Node *i = list->head; i != NULL; i = i->node) {
+void field_put(int **field, Node *node, unsigned int value) {
+  for (Node *i = node; i != NULL; i = i->node) {
     field[i->y][i->x] = value;
   }
 }
@@ -360,10 +445,15 @@ void display(int **field){
     for (unsigned int j = 0; j < FIELD_WIDTH; j++) {
       if (field[i][j] == EMPTY) {
         ch = ' ';
-      } else {
+      } else if (field[i][j] == SNAKE){
+        textcolor(2);
         ch = big_block;
+      } else if (field[i][j] == FOOD) {
+        textcolor(4);
+        ch = small_block;
       }
       putchar(ch);
+      textcolor(7);
     }
     printf("\033[1C"); // Cursor move right on 1 position
     putchar('\n'); // Line break. Start from new line
