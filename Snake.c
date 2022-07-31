@@ -6,9 +6,9 @@
 
 /* CONSTANTS */
 // Time constants
-unsigned int TIMEPAUSE = 100, GAMEOVER_TIME = 5000;
+unsigned int TIMEPAUSE = 100, GAMEOVER_TIME = 3000; // Miliseconds
 // Field dimensions (preferably odd numbers)
-const unsigned int FIELD_WIDTH = 21, FIELD_HEIGHT = 21;
+const unsigned int FIELD_WIDTH = 26, FIELD_HEIGHT = 26;
 // Field indicators
 enum {EMPTY = 0, SNAKE = 1, FOOD = 2};
 // Frame character numbers
@@ -119,7 +119,7 @@ int main() {
   }
 
   // Returning cursor to the beginning of the field
-  printf("\033[22A"); // Cursor move up on 22 positions
+  printf("\033[%dA", FIELD_HEIGHT + 1); // Cursor move up on 22 positions
   printf("\033[1C"); // Cursor move right on 1 position
 
   // Creating linked list for snake
@@ -183,6 +183,9 @@ int main() {
     if (head_intersects_list(snake) == 1) {
       break;
     }
+
+    // Pause
+    Sleep(TIMEPAUSE);
     
     // If a key was pressed
     if (kbhit()) {
@@ -241,19 +244,34 @@ int main() {
       putchar('\n'); // Line break. Start from new line
       printf("\033[1C"); // Cursor move right on 1 position
     }
-    printf("\033[21A"); // Cursor move up on 21 position - to the beginning of the frame;
+    printf("\033[%dA", FIELD_HEIGHT); // Cursor move up on 21 position - to the beginning of the frame;
     // Clear field
     for (unsigned int i = 0; i < FIELD_HEIGHT; i++) {
       for (unsigned int j = 0; j < FIELD_WIDTH; j++) {
         field[i][j] = EMPTY;
       }
     }
-
-    // Pause
-    Sleep(TIMEPAUSE);
   }
+  
+  
+  // Clearing the console
+  system("cls");
+
+  // Set green color
+  textcolor(2);
+  // Printing "Game over" message
+  printf("  ________                        ________\n");
+  printf(" /  _____/_____    _____   ____   \\_____  \\___  __ ___________\n");
+  printf("/   \\  ___\\__  \\  /     \\_/ __ \\   /   |   \\  \\/ // __ \\_  __ \\\n");
+  printf("\\    \\_\\  \\/ __ \\|  Y Y  \\  ___/  /    |    \\   /\\  ___/|  | \\/\n");
+  printf(" \\______  (____  /__|_|  /\\___  > \\_______  /\\_/  \\___  >__|\n");
+  printf("        \\/     \\/      \\/     \\/          \\/          \\/");
+
+  // Set white color
+  textcolor(7);
   // Gameover pause
   Sleep(GAMEOVER_TIME);
+  exit(1);
   return 0;
 }
 
